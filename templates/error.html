@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ status }} | Campus Guide</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body class="auth-page">
+  <main class="content-card" style="max-width: 520px; margin: 12vh auto; padding: 32px;">
+    <p class="eyebrow">CAMPUS GUIDE</p>
+    <h1>{{ status }} — request could not be completed</h1>
+    <p class="muted">{{ message }}</p>
+    <a class="button primary" style="margin-top: 18px;" href="{{ url_for('index') }}">Return to the platform</a>
+  </main>
+</body>
+</html>

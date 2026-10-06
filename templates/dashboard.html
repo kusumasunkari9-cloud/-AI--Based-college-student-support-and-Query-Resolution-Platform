@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>Campus Guide | Student support</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body class="app-page">
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('index') }}"><span class="brand-mark">C</span><span>Campus Guide</span></a>
+    <p class="side-label">WORKSPACE</p>
+    <a class="nav-item active" href="#assistant"><span>✧</span> AI assistant <kbd>01</kbd></a>
+    <a class="nav-item" href="#documents"><span>▤</span> My documents</a>
+    <a class="nav-item" href="#changes"><span>◌</span> What changed for me?</a>
+    <a class="nav-item" href="#support"><span>◎</span> Help & tickets <span class="nav-count">{{ tickets|length }}</span></a>
+    {% if g.user.role == 'admin' %}
+    <p class="side-label admin-label">ADMINISTRATION</p>
+    <a class="nav-item" href="#admin-documents"><span>▧</span> Knowledge library</a>
+    <a class="nav-item" href="#admin-overview"><span>▦</span> Admin overview</a>
+    {% endif %}
+    <div class="sidebar-bottom">
+      <div class="help-card"><span class="help-spark">✳</span><b>Need a person?</b><p>Ask a question and we’ll connect you to the right team.</p><a href="#support">Get support <span>→</span></a></div>
+      <div class="profile-mini"><div class="avatar">{{ g.user.name[:1]|upper }}</div><div class="profile-mini-info"><b>{{ g.user.name }}</b><small>{{ g.user.role|capitalize }}{% if g.user.department %} · {{ g.user.department }}{% endif %}</small></div><form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="icon-button" title="Sign out" aria-label="Sign out">↗</button></form></div>
+    </div>
+  </aside>
+  <main class="main-content">
+    <header class="topbar">
+      <div class="breadcrumbs"><span>Campus Guide</span><i>/</i><b>{{ 'Admin workspace' if g.user.role == 'admin' else 'Student workspace' }}</b></div>
+      <div class="topbar-right"><span class="status-dot"></span><span>Knowledge base online</span><div class="avatar small">{{ g.user.name[:1]|upper }}</div></div>
+    </header>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="flash-list page-flashes">{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+    {% endwith %}
+    <div class="page-wrap">
+      {% if g.user.role == 'admin' %}
+      <section class="welcome-row" id="admin-overview"><div><p class="eyebrow">ADMIN CONSOLE</p><h1>Good day, {{ g.user.name.split()[0] }} <span>✳</span></h1><p class="muted">Keep campus knowledge current and student support moving.</p></div><a class="button primary" href="#admin-documents">Manage documents <span>→</span></a></section>
+      <section class="metrics-grid">
+        <article class="metric-card"><span class="metric-icon lilac">▤</span><div><span>Official documents</span><b>{{ metrics.documents }}</b><small>Indexed in knowledge base</small></div><span class="metric-arrow">↗</span></article>
+        <article class="metric-card"><span class="metric-icon mint">♙</span><div><span>Student accounts</span><b>{{ metrics.students }}</b><small>Active platform profiles</small></div><span class="metric-arrow">↗</span></article>
+        <article class="metric-card"><span class="metric-icon peach">◎</span><div><span>Open tickets</span><b>{{ metrics.open_tickets }}</b><small>Awaiting staff resolution</small></div><span class="metric-arrow">↗</span></article>
+        <article class="metric-card"><span class="metric-icon blue">⌕</span><div><span>Needs review</span><b>{{ metrics.unanswered }}</b><small>Low-confidence queries</small></div><span class="metric-arrow">↗</span></article>
+        <article class="metric-card"><span class="metric-icon lilac">✧</span><div><span>Questions answered</span><b>{{ metrics.questions }}</b><small>{{ (metrics.avg_confidence * 100)|round|int }}% average evidence match</small></div><span class="metric-arrow">↗</span></article>
+        <article class="metric-card"><span class="metric-icon mint">♡</span><div><span>Helpful feedback</span><b>{{ metrics.feedback_helpful }}/{{ metrics.feedback_total }}</b><small>Positive / all answer ratings</small></div><span class="metric-arrow">↗</span></article>
+      </section>
+      {% else %}
+      <section class="welcome-row"><div><p class="eyebrow">YOUR CAMPUS, AT YOUR FINGERTIPS</p><h1>Hi {{ g.user.name.split()[0] }}, what can we help with? <span>✳</span></h1><p class="muted">Get clear, source-backed answers to your college questions.</p></div><button class="button subtle" data-open-profile>♙ <span>Edit profile</span></button></section>
+      <section class="quick-prompts"><span class="prompt-label">TRY ASKING</span><button data-prompt="What is the attendance requirement for my semester?">Attendance requirement <span>↗</span></button><button data-prompt="What is the exam registration deadline?">Exam deadlines <span>↗</span></button><button data-prompt="Which scholarships can I apply for?">Scholarships <span>↗</span></button><button data-prompt="How can I renew a library book?">Library services <span>↗</span></button></section>
+      {% endif %}
+
+      <section class="assistant-section" id="assistant">
+        <div class="section-heading"><div><p class="eyebrow">CAMPUS AI ASSISTANT</p><h2>Ask anything about college</h2><p class="muted">Answers are grounded in your college’s official documents and your own uploads.</p></div><span class="source-badge"><span class="status-dot"></span> Source-aware</span></div>
+        <div class="assistant-card">
+          <div class="chat-top"><div class="assistant-avatar">✳</div><div><b>Campus assistant</b><small><span class="status-dot"></span> Ready to help · sources are cited</small></div><button class="icon-button clear-chat" title="Clear conversation" aria-label="Clear conversation">↻</button></div>
+          <div class="chat-messages" id="chat-messages" aria-live="polite"><div class="message-row assistant-row"><div class="assistant-avatar tiny">✳</div><div class="message-content"><div class="message-bubble">Hi {{ g.user.name.split()[0] }}! I can help with exams, fees, attendance, academics, scholarships, placements and more. What would you like to know?</div><small class="message-time">Just now · Campus assistant</small></div></div></div>
+          <form class="chat-form" id="chat-form"><label for="chat-input" class="sr-only">Ask your question</label><textarea id="chat-input" name="query" rows="1" maxlength="2000" placeholder="Ask a question about your college..." required></textarea><div class="chat-controls"><label class="why-toggle"><input type="checkbox" id="explain-mode"><span class="toggle-track"></span><span>Explain why</span><span class="why-tip" title="Adds a brief evidence-based explanation and identifies profile context. No private model reasoning is shown.">ⓘ</span></label><span class="chat-hint">Enter to send · Shift+Enter for a new line</span><button class="send-button" type="submit" aria-label="Send question">↑</button></div></form>
+          <div class="assistant-disclaimer">✧ Responses are based on available documents. Always check official sources for final decisions.</div>
+        </div>
+      </section>
+
+      <div class="content-grid">
+        <section class="content-card" id="documents">
+          <div class="card-heading"><div><p class="eyebrow">YOUR KNOWLEDGE</p><h2>My documents</h2></div><span class="count-pill">{{ documents|length }} items</span></div>
+          <p class="muted card-intro">Ask questions about documents you upload. Personal files are visible only to you.</p>
+          <form class="upload-row" method="post" action="{{ url_for('upload_personal_document') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label class="file-picker">＋ <span>Add document</span><input type="file" name="document" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg" required></label>
+            <input class="compact-input" type="text" name="title" placeholder="Optional title" maxlength="180">
+            <button class="button secondary compact" type="submit">Upload</button>
+          </form>
+          <div class="document-list">
+            {% for document in documents %}
+            <div class="document-item"><span class="file-icon {{ 'official' if document.is_official else '' }}">{{ '▧' if document.original_filename.endswith('.pdf') else '▤' }}</span><div class="document-info"><b>{{ document.title }}</b><small>{{ 'Official college source' if document.is_official else 'Private to you' }}{% if document.version %} · v{{ document.version }}{% endif %}</small></div>{% if document.is_official %}<span class="doc-tag official-tag">OFFICIAL</span>{% else %}<span class="doc-tag personal-tag">PRIVATE</span>{% endif %}</div>
+            {% else %}<div class="empty-state compact-empty"><span>▤</span><p>No documents yet. Upload a personal file or wait for college documents to appear.</p></div>{% endfor %}
+          </div>
+        </section>
+        <section class="content-card" id="changes">
+          <div class="card-heading"><div><p class="eyebrow">POLICY UPDATES</p><h2>What changed for me?</h2></div><span class="change-icon">◌</span></div>
+          <p class="muted card-intro">Compare versions of an official document and see whether the change matches your saved profile.</p>
+          <form class="compare-form" id="compare-form">
+            <label>Previous version<select name="old_id" required><option value="">Choose document</option>{% for group in docs_for_compare %}{% for version in group.versions[:-1] %}<option value="{{ version.id }}">{{ group.title }}{% if group.department %} · {{ group.department }}{% endif %}{% if group.semester %} · sem {{ group.semester }}{% endif %} · {{ version.version or version.uploaded_at[:10] }}</option>{% endfor %}{% endfor %}</select></label>
+            <label>New version<select name="new_id" required><option value="">Choose document</option>{% for group in docs_for_compare %}{% for version in group.versions[1:] %}<option value="{{ version.id }}">{{ group.title }}{% if group.department %} · {{ group.department }}{% endif %}{% if group.semester %} · sem {{ group.semester }}{% endif %} · {{ version.version or version.uploaded_at[:10] }}</option>{% endfor %}{% endfor %}</select></label>
+            <button class="button secondary full" type="submit">Compare for my profile <span>→</span></button>
+          </form>
+          <div id="compare-result" class="compare-result" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <section class="content-card support-card" id="support">
+        <div class="card-heading"><div><p class="eyebrow">HUMAN SUPPORT</p><h2>Your support tickets</h2></div><span class="count-pill">{{ tickets|length }} recent</span></div>
+        <p class="muted card-intro">Questions that need human help are routed to a team. Track the status and staff response here.</p>
+        <details class="manual-ticket">
+          <summary>＋ Create a support ticket</summary>
+          <form method="post" action="{{ url_for('create_student_ticket') }}" class="manual-ticket-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label>Subject<input name="subject" maxlength="180" required placeholder="Briefly describe what you need"></label>
+            <label>How can the team help?<textarea name="message" maxlength="3000" rows="3" required placeholder="Include details that will help staff resolve your request."></textarea></label>
+            <button class="button secondary compact" type="submit">Create ticket</button>
+          </form>
+        </details>
+        <div class="ticket-list">
+          {% for ticket in tickets %}
+          <article class="ticket-item"><div class="ticket-main"><span class="ticket-mark">#{{ ticket.id }}</span><div><b>{{ ticket.subject }}</b><small>{{ ticket.department }} · {{ ticket.created_at[:10] }}</small>{% if ticket.staff_response %}<p class="staff-response"><b>Staff response:</b> {{ ticket.staff_response }}</p>{% endif %}</div></div><div class="ticket-status"><span class="priority {{ ticket.priority|lower }}">{{ ticket.priority }}</span><span class="status-pill {{ ticket.status|lower|replace(' ', '-') }}">{{ ticket.status }}</span></div></article>
+          {% else %}<div class="empty-state compact-empty"><span>◎</span><p>No tickets to show. If a question can’t be verified, the assistant will create one for you.</p></div>{% endfor %}
+        </div>
+      </section>
+
+      <details class="profile-card" id="profile-form">
+        <summary><span><span class="profile-summary-icon">♙</span><span><b>Your student profile</b><small>Personalize answers with your department, year, courses, and preferences.</small></span></span><span class="summary-arrow">⌄</span></summary>
+        <form method="post" action="{{ url_for('update_profile') }}" class="profile-fields">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>Full name<input name="name" value="{{ g.user.name }}" required maxlength="100"></label><label>Department<input name="department" value="{{ g.user.department }}" placeholder="e.g. Computer Science"></label>
+          <label>Year<input name="year" value="{{ g.user.year }}" placeholder="e.g. 2nd year"></label><label>Semester<input name="semester" value="{{ g.user.semester }}" placeholder="e.g. 4"></label>
+          <label class="wide-field">Courses<input name="courses" value="{{ g.user.courses }}" placeholder="e.g. Data Structures, Statistics"></label>
+          <label class="wide-field">Answer preferences<input name="preferences" value="{{ g.user.preferences }}" placeholder="e.g. concise"></label>
+          <button class="button primary" type="submit">Save profile</button>
+        </form>
+      </details>
+
+      {% if g.user.role == 'admin' %}
+      <section class="admin-lower" id="admin-documents">
+        <div class="content-card">
+          <div class="card-heading"><div><p class="eyebrow">DOCUMENT LIBRARY</p><h2>Manage official sources</h2></div><span class="count-pill">{{ managed_documents|length }} items</span></div>
+          <p class="muted card-intro">Archive outdated sources without losing their version history or policy comparisons.</p>
+          <div class="managed-document-list">
+            {% for document in managed_documents %}
+            <article class="managed-document">
+              <div><b>{{ document.title }}</b><small>{{ document.version or 'No version' }}{% if document.department %} · {{ document.department }}{% endif %}{% if document.effective_date %} · Effective {{ document.effective_date }}{% endif %}</small></div>
+              <form method="post" action="{{ url_for('toggle_document_archive', document_id=document.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="button {{ 'secondary' if document.active else 'primary' }} compact" type="submit">{{ 'Archive' if document.active else 'Restore' }}</button></form>
+              {% if not document.active %}<span class="doc-tag personal-tag">ARCHIVED</span>{% endif %}
+            </article>
+            {% else %}<div class="empty-state compact-empty"><p>Upload the first official source to start your knowledge library.</p></div>{% endfor %}
+          </div>
+        </div>
+        <div class="content-card">
+          <div class="card-heading"><div><p class="eyebrow">KNOWLEDGE MANAGEMENT</p><h2>Upload official document</h2></div><span class="official-seal">✓</span></div>
+          <p class="muted card-intro">Add or version official college PDFs, DOCX, TXT, and image documents.</p>
+          <form method="post" action="{{ url_for('upload_official_document') }}" enctype="multipart/form-data" class="admin-upload-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label class="upload-drop">▧ <b>Choose official file</b><small>PDF, DOCX, TXT, PNG or JPG · max 20 MB</small><input type="file" name="document" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg" required></label>
+            <label>Document title<input name="title" placeholder="e.g. Academic Regulations" required></label>
+            <div class="metadata-grid"><label>Version<input name="version" placeholder="e.g. 2026.1"></label><label>Effective date<input name="effective_date" placeholder="YYYY-MM-DD"></label><label>Academic year<input name="academic_year" placeholder="2026–27"></label><label>Semester<input name="semester" placeholder="All / 4"></label><label class="wide-field">Department<input name="department" placeholder="Blank applies to all departments"></label></div>
+            <button class="button primary full" type="submit">Upload & index document <span>→</span></button>
+          </form>
+        </div>
+        <div class="content-card">
+          <div class="card-heading"><div><p class="eyebrow">POLICY MONITOR</p><h2>Recent changes</h2></div><span class="change-icon">◌</span></div>
+          {% for change in changes %}<article class="policy-item"><div class="policy-item-top"><b>{{ change.title }}</b><span class="status-pill in-progress">UPDATED</span></div><small>{{ change.old_version or 'Previous' }} → {{ change.new_version or 'Current' }}{% if change.effective_date %} · Effective {{ change.effective_date }}{% endif %}</small><p>{{ change.categories }} · Potentially affects {{ change.affected_groups }}</p><pre>{{ change.summary[:850] }}</pre></article>{% else %}<div class="empty-state compact-empty"><span>◌</span><p>No version-to-version policy changes have been detected yet.</p></div>{% endfor %}
+        </div>
+      </section>
+      <section class="content-grid admin-tables">
+        <div class="content-card">
+          <div class="card-heading"><div><p class="eyebrow">NEEDS A HUMAN</p><h2>Low-confidence questions</h2></div><span class="count-pill">{{ low_queries|length }} recent</span></div>
+          {% for query in low_queries %}<article class="query-review"><b>{{ query.query }}</b><small>{{ query.student_name }} · {{ query.domain }} · {{ (query.confidence * 100)|round|int }}% evidence match</small></article>{% else %}<div class="empty-state compact-empty"><p>No low-confidence questions to review.</p></div>{% endfor %}
+        </div>
+        <div class="content-card">
+          <div class="card-heading"><div><p class="eyebrow">FAQ SIGNALS</p><h2>Frequently asked</h2></div></div>
+          {% for question in frequent %}<article class="query-review"><b>{{ question.query }}</b><small>{{ question.asked }} asks · {{ question.domain }} · {{ (question.confidence * 100)|round|int }}% avg confidence</small></article>{% else %}<div class="empty-state compact-empty"><p>Common questions will appear as students use the assistant.</p></div>{% endfor %}
+        </div>
+      </section>
+      <section class="content-card admin-ticket-card">
+        <div class="card-heading"><div><p class="eyebrow">STUDENT SERVICES</p><h2>Ticket queue</h2></div><span class="count-pill">{{ all_tickets|length }} recent</span></div>
+        {% for ticket in all_tickets %}
+        <article class="admin-ticket"><div class="ticket-main"><span class="ticket-mark">#{{ ticket.id }}</span><div><b>{{ ticket.subject }}</b><small>{{ ticket.student_name }} · {{ ticket.student_email }} · {{ ticket.department }} · <span class="priority {{ ticket.priority|lower }}">{{ ticket.priority }}</span></small><p>{{ ticket.message }}</p></div></div><form method="post" action="{{ url_for('update_ticket', ticket_id=ticket.id) }}" class="ticket-edit-form"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><select name="status"><option {{ 'selected' if ticket.status == 'Open' else '' }}>Open</option><option {{ 'selected' if ticket.status == 'In Progress' else '' }}>In Progress</option><option {{ 'selected' if ticket.status == 'Closed' else '' }}>Closed</option></select><input name="staff_response" value="{{ ticket.staff_response }}" placeholder="Write a response visible to the student"><button class="button secondary compact" type="submit">Save</button></form></article>
+        {% else %}<div class="empty-state compact-empty"><p>No tickets in the queue.</p></div>{% endfor %}
+      </section>
+      {% endif %}
+      <footer class="page-footer"><span>✳ Campus Guide</span><span>Evidence first. People always.</span><a href="mailto:student-support@example.edu">Contact support</a></footer>
+    </div>
+  </main>
+  <div class="toast-region" id="toast-region" aria-live="polite"></div>
+</body>
+</html>

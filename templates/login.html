@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>Campus Guide | Sign in</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body class="auth-page">
+  <main class="auth-shell">
+    <section class="auth-intro">
+      <a class="brand" href="{{ url_for('index') }}"><span class="brand-mark">C</span><span>Campus Guide</span></a>
+      <div class="auth-copy">
+        <p class="eyebrow">YOUR COLLEGE, MADE CLEAR</p>
+        <h1>Good answers start with the right source.</h1>
+        <p>Ask about college policies, your courses, and campus services. Answers are grounded in documents and include citations.</p>
+        <div class="proof-points"><span>✦ Official sources</span><span>✦ Private student profile</span><span>✦ Human help when needed</span></div>
+      </div>
+      <div class="auth-art" aria-hidden="true"><div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div><div class="art-card"><span>✳</span><b>Clear answers.<br>Confident next steps.</b></div></div>
+      <p class="auth-footer">Student support, grounded in your college’s own information.</p>
+    </section>
+    <section class="auth-panel">
+      <div class="mobile-brand"><a class="brand" href="{{ url_for('index') }}"><span class="brand-mark">C</span><span>Campus Guide</span></a></div>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}<div class="flash-list">{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+      {% endwith %}
+      <div class="auth-form-wrap">
+        <p class="eyebrow">WELCOME BACK</p>
+        <h2>Sign in to your campus</h2>
+        <p class="muted">Your questions, documents, and support tickets in one place.</p>
+        <form method="post" action="{{ url_for('login') }}" class="form-stack">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>Email address<input type="email" name="email" autocomplete="email" placeholder="you@college.edu" required></label>
+          <label>Password<input type="password" name="password" autocomplete="current-password" placeholder="Enter your password" required></label>
+          <button class="button primary full" type="submit">Sign in <span>→</span></button>
+        </form>
+        <div class="form-divider"><span>NEW TO CAMPUS GUIDE?</span></div>
+        <details class="register-details">
+          <summary>Create a student account <span>+</span></summary>
+          <form method="post" action="{{ url_for('register') }}" class="form-stack register-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label>Full name<input type="text" name="name" autocomplete="name" required maxlength="100"></label>
+            <label>College email<input type="email" name="email" autocomplete="email" required></label>
+            <label>Create password<input type="password" name="password" autocomplete="new-password" minlength="12" required><small>Use at least 12 characters.</small></label>
+            <button class="button secondary full" type="submit">Create account</button>
+          </form>
+        </details>
+        <p class="privacy-note"><span>▣</span> Your profile and personal documents are private to your account.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
